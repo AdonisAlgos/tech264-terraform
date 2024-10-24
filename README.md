@@ -19,12 +19,18 @@
     - [Which tools support push/pull?](#which-tools-support-pushpull)
     - [Does Terraform use the push or pull configuration?](#does-terraform-use-the-push-or-pull-configuration)
     - [Which is better: push or pull configuration management?](#which-is-better-push-or-pull-configuration-management)
-  - [Terraform Implementation](#terraform-implementation)
+  - [Terraform Infrustructure Implementation](#terraform-infrustructure-implementation)
     - [Securing Sensitive Files/Credentials](#securing-sensitive-filescredentials)
     - [Creating an EC2 Instance via Terraform](#creating-an-ec2-instance-via-terraform)
     - [Running Terraform Commands](#running-terraform-commands)
     - [Creating NSG Rules via Terraform](#creating-nsg-rules-via-terraform)
     - [Creating an EC2 Instance and attaching NSG rules via Terraform](#creating-an-ec2-instance-and-attaching-nsg-rules-via-terraform)
+  - [Create a GitHub Repository with Terraform](#create-a-github-repository-with-terraform)
+    - [Authentication with GitHub](#authentication-with-github)
+      - [Create a Personal Access Token](#create-a-personal-access-token)
+      - [Creating the main.tf Terraform file](#creating-the-maintf-terraform-file)
+      - [Handling Sensitive Information Using Variables](#handling-sensitive-information-using-variables)
+      - [Apply Terraform Workflow](#apply-terraform-workflow)
 
 ## Downloading and Accessing Terraform
 
@@ -138,7 +144,7 @@ Terraform uses a push model. The user triggers changes (via terraform apply), an
 * Pull Model is better for scalability and long-term consistency, ideal for large distributed systems that need regular updates.<br>
 *The choice depends on the need for centralized control (push) versus decentralized, periodic updates (pull).*
 
-## Terraform Implementation
+## Terraform Infrustructure Implementation
 
 ### Securing Sensitive Files/Credentials
 
@@ -312,3 +318,83 @@ resource "aws_instance" "app_instance" {
   }
 }
 ```
+
+## Create a GitHub Repository with Terraform
+
+### Authentication with GitHub
+
+Terraform requires a **personal access token (PAT)** from GitHub to authenticate and perform actions like creating repositories. Here’s how you can create the token and use it in Terraform.
+
+#### Create a Personal Access Token
+
+1. Go to your GitHub account https://github.com/login
+2. Navigate to **Settings** > **Developer settings** > **Personal access tokens**.<br>![Creating a PAT](./images/creating-pat.png)
+3. Click **Generate new token** and give it the following scopes:
+   * Enter a description for the PAT purpose.
+   * Set an expiration date (recomended by GitHub).
+   * Enable **repo**<br>![Scope repo](./images/pat-scope-1.png)
+   * Enable **delete_repo**<br>![Scope delete_repo text](./images/pat-scope-2.png)
+4. Click **Generate token** and copy the token string appeared on screen.
+5. Store the token securely as a systen environment variable. Open the Windows start menu, start typing environment and click **Edit system environment variables**. The System Properties window opens.<br>![Searching for environment variable in Windows start menu](./images/environment-variable-setup.png)<br>
+6. Click the Environment Variables.<br>![System Properties](./images/system-properties.png)<br>
+7. Create a **New System variable**.<br>![Creating system variable](./images/creating-system-variable.png)
+
+#### Creating the main.tf Terraform file
+
+```bash
+# GitHub provider configuration
+provider "github" {
+  token = var.github_token  # Use the token passed in through variables
+}
+
+# Create a GitHub repository
+resource "github_repository" "tech264_repo" {
+  name        = "tech264-tf-create-github-repo"
+  description = "Repository created using Terraform"
+  visibility  = "public"  # Set to 'public' or 'private'
+}
+```
+
+#### Handling Sensitive Information Using Variables
+
+***Note: Ensure that a .gitignore file is created within the root of the local repository which includes the below variable or variable extensions.***
+
+```bash
+*.tfvars
+*.auto.tfvars
+variable.tf
+```
+
+1. Creating a `variables.tf` file to define the variables used for the GitHub token.
+
+```bash
+variable "github_token" {
+  default = "$GITHUB_TOKEN"
+  description = "The GitHub personal access token for authentication"
+  type        = string
+  sensitive   = true
+}
+```
+
+#### Apply Terraform Workflow
+
+1. Run the following command to initialize your Terraform working directory.
+
+```bash
+terraform init
+```
+
+2. Run terraform plan to check the configuration.
+
+```bash
+terraform plan
+```
+
+3. Run terraform apply to create the repository.
+
+```bash
+terraform apply
+```
+
+Running these steps should have now created your new repository on GitHub.
+
